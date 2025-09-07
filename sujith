@@ -1,0 +1,57 @@
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+# In-memory data store
+tasks = []
+task_id_counter = 1
+
+# CREATE - Add a new task
+@app.route('/tasks', methods=['POST'])
+def create_task():
+    global task_id_counter
+    data = request.get_json()
+    task = {
+        'id': task_id_counter,
+        'title': data.get('title'),
+        'description': data.get('description')
+    }
+    tasks.append(task)
+    task_id_counter += 1
+    return jsonify(task), 201
+
+# READ - Get all tasks
+@app.route('/tasks', methods=['GET'])
+def get_tasks():
+    return jsonify(tasks)
+
+# READ - Get a single task by ID
+@app.route('/tasks/<int:task_id>', methods=['GET'])
+def get_task(task_id):
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if task:
+        return jsonify(task)
+    return jsonify({'error': 'Task not found'}), 404
+
+# UPDATE - Update a task by ID
+@app.route('/tasks/<int:task_id>', methods=['PUT'])
+def update_task(task_id):
+    data = request.get_json()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if task:
+        task['title'] = data.get('title', task['title'])
+        task['description'] = data.get('description', task['description'])
+        return jsonify(task)
+    return jsonify({'error': 'Task not found'}), 404
+
+# DELETE - Delete a task by ID
+@app.route('/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    global tasks
+    tasks = [t for t in tasks if t['id'] != task_id]
+    return jsonify({'message': 'Task deleted'})
+
+# Run Flask app in development mode
+if __name__ == '__main__':
+    app.run(debug=True)
+
